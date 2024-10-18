@@ -19,15 +19,18 @@ import { ManageSuitesTool } from './PreviewSuites/ManageSuitesTool/ManageSuitesT
 import { Divider } from '../Divider';
 import { AccordionItem, Accordion } from '../Accordion';
 
-const filterDevices = (devices: Device[], filter: string) => {
+const filterDevices = (devices: Device[], filter: string, typeFilter: string) => {
   const sanitizedFilter = filter.trim().toLowerCase();
 
-  return devices.filter((device: Device) =>
-    `${device.name.toLowerCase()}${device.width}x${device.height}`.includes(
-      sanitizedFilter
-    )
-  );
+  console.log(devices)
+
+  return devices.filter((device: Device) => {
+    const matchesNameOrSize = `${device.name.toLowerCase()} ${device.width}x${device.height}`.includes(sanitizedFilter);
+    const matchesType = typeFilter === 'all' || device.type === typeFilter; // Assuming `device.type` exists
+    return matchesNameOrSize && matchesType;
+  });
 };
+
 
 const DeviceManager = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState<boolean>(false);
@@ -45,16 +48,22 @@ const DeviceManager = () => {
   );
   const [filteredCustomDevices, setFilteredCustomDevices] =
     useState<Device[]>(customDevices);
+    const [deviceTypeFilter, setDeviceTypeFilter] = useState<string>('all');
 
-  useEffect(() => {
-    setFilteredDevices(filterDevices(defaultDevices, searchText));
-    setFilteredCustomDevices(filterDevices(customDevices, searchText));
-  }, [customDevices, searchText]);
+
+    useEffect(() => {
+      setFilteredDevices(filterDevices(defaultDevices, searchText, deviceTypeFilter));
+      setFilteredCustomDevices(filterDevices(customDevices, searchText, deviceTypeFilter));
+    }, [customDevices, searchText, deviceTypeFilter]);
+    
+    
+
+
 
   const saveCustomDevices = (newCustomDevices: Device[]) => {
     setCustomDevices(newCustomDevices);
     window.electron.store.set('deviceManager.customDevices', newCustomDevices);
-    setFilteredCustomDevices(filterDevices(newCustomDevices, searchText));
+    setFilteredCustomDevices(filterDevices(newCustomDevices, searchText,deviceTypeFilter));
   };
 
   const onSaveDevice = async (device: Device, isNew: boolean) => {
@@ -120,6 +129,20 @@ const DeviceManager = () => {
               onChange={(e) => setSearchText(e.target.value)}
             />
           </div>
+          <div className="flex items-center mb-4">
+  <label htmlFor="device-type" className="mr-2">Filter by Type:</label>
+  <select
+    id="device-type"
+    className="rounded bg-inherit px-2 py-1"
+    value={deviceTypeFilter}
+    onChange={(e) => setDeviceTypeFilter(e.target.value)}
+  >
+    <option value="all">All Types</option>
+    <option value="phone">Phone</option>
+    <option value="tablet">Tablet</option>
+    <option value="notebook">Desktop</option>
+  </select>
+</div>
         </div>
         <Accordion>
           <>
